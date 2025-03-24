@@ -11,5 +11,11 @@ PROJECTS_ENDPOINT = "https://api.github.com/repos/google/oss-fuzz/contents/proje
 
 def get_projects():
     response = httpx.get(PROJECTS_ENDPOINT)
-    projects = response.json()
+    projects = [
+        {
+            "name": project["name"],
+            "url": project["html_url"],
+        }
+        for project in response.json()
+    ]
     return projects
