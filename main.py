@@ -14,7 +14,8 @@ PROJECT_YAML_ENDPOINT = "https://api.github.com/repos/google/oss-fuzz/contents/p
 BUILD_SH_ENDPOINT = "https://api.github.com/repos/google/oss-fuzz/contents/projects/{project_name}/build.sh"
 
 
-def get_all_projects():
+def get_all_projects() -> list[dict[str, str]]:
+    """Return all the OSS-Fuzz projects."""
     response = httpx.get(PROJECTS_ENDPOINT)
     projects = [
         {
@@ -26,7 +27,8 @@ def get_all_projects():
     return projects
 
 
-def infer_build_system(file: str):
+def infer_build_system(file: str) -> str | None:
+    """Heuristically infer the build system using in a file."""
     file = file.lower()
     if "cmake" in file:
         return "cmake"
@@ -39,7 +41,8 @@ def infer_build_system(file: str):
     return None
 
 
-def get_project_details(project_name: str):
+def get_project_details(project_name: str) -> dict[str, str | list[str]]:
+    """Return the details of a specific OSS-Fuzz project."""
     url = PROJECT_YAML_ENDPOINT.format(project_name=project_name)
     response = httpx.get(url)
     project = yaml.safe_load(base64.b64decode(response.json()["content"]))
