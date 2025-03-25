@@ -21,16 +21,10 @@ _projects_cache = {}
 BATCH_SIZE = 100
 
 
-def get_all_projects() -> list[dict[str, str]]:
-    """Return all the OSS-Fuzz projects."""
+def list_all_projects() -> list[str]:
+    """Return the names of all OSS-Fuzz projects."""
     response = httpx.get(PROJECTS_ENDPOINT)
-    projects = [
-        {
-            "name": project["name"],
-            "url": project["html_url"],
-        }
-        for project in response.json()
-    ]
+    projects = [project["name"] for project in response.json()]
     return projects
 
 
@@ -100,6 +94,7 @@ def _fetch_project_files_query(project_names: list[str], filename: str) -> str:
     """
     return query
 
+
 def _merge_by_project(projects1, projects2):
     """Merge two dictionaries of projects into one, keyed by project names."""
     merged_projects = defaultdict(dict)
@@ -130,10 +125,9 @@ def _batch_list(list_: list, batch_size: int):
 
 def cache_all_projects() -> None:
     """Fetch and cache select data for all OSS-Fuzz projects (in batches)."""
-    project_names = [project["name"] for project in get_all_projects()]
     project_yaml_files, build_sh_files = {}, {}
     print("Please wait: caching project data... (just once)")
-    for pnames in _batch_list(project_names, BATCH_SIZE):
+    for pnames in _batch_list(list_all_projects(), BATCH_SIZE):
         project_yaml_files.update(_fetch_project_files(pnames, "project.yaml"))
         build_sh_files.update(_fetch_project_files(pnames, "build.sh"))
     global _projects_cache
