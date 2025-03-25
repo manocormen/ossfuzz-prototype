@@ -11,24 +11,23 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+type Project = dict[str, str | list[str]]
+type Projects = dict[str, Project]
 
 BASE_URL = "https://api.github.com"
 CONTENTS_ENDPOINT = "/repos/google/oss-fuzz/contents"
 GRAPHQL_ENDPOINT = "/graphql"
 
-_projects_cache: Projects = {}
-
 BATCH_SIZE = 100
 
-type Project = dict[str, str | list[str]]
-type Projects = dict[str, Project]
+_projects_cache: Projects = {}
 
 
-def list_all_projects() -> list[str]:
-    """Return the names of all OSS-Fuzz projects."""
+def list_projects(limit: int | None = None) -> list[str]:
+    """Return the names of OSS-Fuzz projects, up to limit."""
     response = httpx.get(BASE_URL + CONTENTS_ENDPOINT + "/projects")
     projects = [project["name"] for project in response.json()]
-    return projects
+    return projects if limit is None else projects[:limit]
 
 
 def _infer_build_system(file: str) -> str | None:
@@ -129,7 +128,7 @@ def cache_all_projects() -> None:
     """Fetch and cache select data for all OSS-Fuzz projects (in batches)."""
     project_yaml_files, build_sh_files = {}, {}
     print("Please wait: caching project data... (just once)")
-    for pnames in _batch_list(list_all_projects(), BATCH_SIZE):
+    for pnames in _batch_list(list_projects(), BATCH_SIZE):
         project_yaml_files.update(_fetch_project_files(pnames, "project.yaml"))
         build_sh_files.update(_fetch_project_files(pnames, "build.sh"))
     global _projects_cache
