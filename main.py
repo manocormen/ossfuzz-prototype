@@ -3,6 +3,7 @@
 import base64
 import os
 from collections import defaultdict
+from typing import Iterator
 
 import httpx
 import yaml
@@ -15,9 +16,12 @@ BASE_URL = "https://api.github.com"
 CONTENTS_ENDPOINT = "/repos/google/oss-fuzz/contents"
 GRAPHQL_ENDPOINT = "/graphql"
 
-_projects_cache = {}
+_projects_cache: Projects = {}
 
 BATCH_SIZE = 100
+
+type Project = dict[str, str | list[str]]
+type Projects = dict[str, Project]
 
 
 def list_all_projects() -> list[str]:
@@ -49,11 +53,11 @@ def _fetch_project_file(project_name: str, filename: str) -> str:
     return file
 
 
-def get_project_details(project_name: str) -> dict[str, str | list[str]]:
+def get_project_details(project_name: str) -> Project:
     """Return the details of a specific OSS-Fuzz project."""
     project_yaml = yaml.safe_load(_fetch_project_file(project_name, "project.yaml"))
     build_sh = _fetch_project_file(project_name, "build.sh")
-    metadata = {
+    project_details = {
         "name": project_name,
         "language": project_yaml.get("language"),
         "homepage": project_yaml.get("homepage"),
@@ -63,7 +67,7 @@ def get_project_details(project_name: str) -> dict[str, str | list[str]]:
         "fuzzing_engines": project_yaml.get("fuzzing_engines", []),
         "build_system": _infer_build_system(build_sh),
     }
-    return metadata
+    return project_details
 
 
 def _sanitize_identifier(identifier: str) -> str:
@@ -95,18 +99,16 @@ def _fetch_project_files_query(project_names: list[str], filename: str) -> str:
     return query
 
 
-def _merge_by_project(projects1, projects2):
+def _merge_by_project(projects1: Projects, projects2: Projects) -> Projects:
     """Merge two dictionaries of projects into one, keyed by project names."""
-    merged_projects = defaultdict(dict)
+    merged_projects: Projects = defaultdict(dict)
     for pname in projects1:
         merged_projects[pname].update(projects1[pname] or {})
         merged_projects[pname].update(projects2[pname] or {})
     return dict(merged_projects)
 
 
-def _fetch_project_files(
-    project_names: list[str], filename: str
-) -> dict[str, dict[str, str]]:
+def _fetch_project_files(project_names: list[str], filename: str) -> Projects:
     """Fetch specific file for given OSS-Fuzz projects via GitHub's GraphQL API."""
     headers = {"Authorization": f"Bearer {os.getenv('GITHUB_TOKEN')}"}
     payload = {"query": _fetch_project_files_query(project_names, filename)}
@@ -117,7 +119,7 @@ def _fetch_project_files(
     return projects
 
 
-def _batch_list(list_: list, batch_size: int):
+def _batch_list(list_: list, batch_size: int) -> Iterator[list]:
     """Break input list into batches."""
     for i in range(0, len(list_), batch_size):
         yield list_[i : i + batch_size]
