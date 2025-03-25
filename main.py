@@ -11,9 +11,9 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
-PROJECTS_ENDPOINT = "https://api.github.com/repos/google/oss-fuzz/contents/projects"
-PROJECT_YAML_ENDPOINT = "https://api.github.com/repos/google/oss-fuzz/contents/projects/{project_name}/project.yaml"
-BUILD_SH_ENDPOINT = "https://api.github.com/repos/google/oss-fuzz/contents/projects/{project_name}/build.sh"
+BASE_URL = "https://api.github.com"
+PROJECTS_ENDPOINT = "/repos/google/oss-fuzz/contents/projects"
+FILES_ENDPOINT = "/repos/google/oss-fuzz/contents/projects/{project_name}/{filename}"
 GITHUB_GRAPHQL_ENDPOINT = "https://api.github.com/graphql"
 
 _projects_cache = {}
@@ -23,7 +23,7 @@ BATCH_SIZE = 100
 
 def list_all_projects() -> list[str]:
     """Return the names of all OSS-Fuzz projects."""
-    response = httpx.get(PROJECTS_ENDPOINT)
+    response = httpx.get(BASE_URL + PROJECTS_ENDPOINT)
     projects = [project["name"] for project in response.json()]
     return projects
 
@@ -42,26 +42,27 @@ def _infer_build_system(file: str) -> str | None:
     return None
 
 
+def _fetch_project_file(project_name: str, filename: str) -> str:
+    """Fetch specific file for given OSS-Fuzz projects via GitHub's REST API."""
+    url = BASE_URL + FILES_ENDPOINT.format(project_name=project_name, filename=filename)
+    response = httpx.get(url)
+    file = base64.b64decode(response.json().get("content", "")).decode()
+    return file
+
+
 def get_project_details(project_name: str) -> dict[str, str | list[str]]:
     """Return the details of a specific OSS-Fuzz project."""
-    url = PROJECT_YAML_ENDPOINT.format(project_name=project_name)
-    response = httpx.get(url)
-    project = yaml.safe_load(base64.b64decode(response.json()["content"]))
-
-    url = BUILD_SH_ENDPOINT.format(project_name=project_name)
-    response = httpx.get(url)
-    build_file = base64.b64decode(response.json()["content"]).decode()
-    build_system = _infer_build_system(build_file)
-
+    project_yaml = yaml.safe_load(_fetch_project_file(project_name, "project.yaml"))
+    build_sh = _fetch_project_file(project_name, "build.sh")
     metadata = {
         "name": project_name,
-        "language": project.get("language"),
-        "homepage": project.get("homepage"),
-        "main_repo": project.get("main_repo"),
-        "primary_contact": project.get("primary_contact"),
-        "vendor_ccs": project.get("vendor_ccs", []),
-        "fuzzing_engines": project.get("fuzzing_engines", []),
-        "build_system": build_system,
+        "language": project_yaml.get("language"),
+        "homepage": project_yaml.get("homepage"),
+        "main_repo": project_yaml.get("main_repo"),
+        "primary_contact": project_yaml.get("primary_contact"),
+        "vendor_ccs": project_yaml.get("vendor_ccs", []),
+        "fuzzing_engines": project_yaml.get("fuzzing_engines", []),
+        "build_system": _infer_build_system(build_sh),
     }
     return metadata
 
@@ -107,7 +108,7 @@ def _merge_by_project(projects1, projects2):
 def _fetch_project_files(
     project_names: list[str], filename: str
 ) -> dict[str, dict[str, str]]:
-    """Fetch specific file for given OSS-Fuzz projects."""
+    """Fetch specific file for given OSS-Fuzz projects via GitHub's GraphQL API."""
     headers = {"Authorization": f"Bearer {os.getenv('GITHUB_TOKEN')}"}
     payload = {"query": _fetch_project_files_query(project_names, filename)}
     response = httpx.post(
