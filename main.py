@@ -12,9 +12,8 @@ load_dotenv()
 
 
 BASE_URL = "https://api.github.com"
-PROJECTS_ENDPOINT = "/repos/google/oss-fuzz/contents/projects"
-FILES_ENDPOINT = "/repos/google/oss-fuzz/contents/projects/{project_name}/{filename}"
-GITHUB_GRAPHQL_ENDPOINT = "https://api.github.com/graphql"
+CONTENTS_ENDPOINT = "/repos/google/oss-fuzz/contents"
+GRAPHQL_ENDPOINT = "/graphql"
 
 _projects_cache = {}
 
@@ -23,7 +22,7 @@ BATCH_SIZE = 100
 
 def list_all_projects() -> list[str]:
     """Return the names of all OSS-Fuzz projects."""
-    response = httpx.get(BASE_URL + PROJECTS_ENDPOINT)
+    response = httpx.get(BASE_URL + CONTENTS_ENDPOINT + "/projects")
     projects = [project["name"] for project in response.json()]
     return projects
 
@@ -44,7 +43,7 @@ def _infer_build_system(file: str) -> str | None:
 
 def _fetch_project_file(project_name: str, filename: str) -> str:
     """Fetch specific file for given OSS-Fuzz projects via GitHub's REST API."""
-    url = BASE_URL + FILES_ENDPOINT.format(project_name=project_name, filename=filename)
+    url = BASE_URL + CONTENTS_ENDPOINT + f"/projects/{project_name}/{filename}"
     response = httpx.get(url)
     file = base64.b64decode(response.json().get("content", "")).decode()
     return file
@@ -112,7 +111,7 @@ def _fetch_project_files(
     headers = {"Authorization": f"Bearer {os.getenv('GITHUB_TOKEN')}"}
     payload = {"query": _fetch_project_files_query(project_names, filename)}
     response = httpx.post(
-        GITHUB_GRAPHQL_ENDPOINT, headers=headers, json=payload, timeout=30
+        BASE_URL + GRAPHQL_ENDPOINT, headers=headers, json=payload, timeout=30
     )
     projects = response.json()["data"]["repository"]
     return projects
