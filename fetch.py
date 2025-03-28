@@ -2,6 +2,7 @@
 
 import base64
 import os
+from typing import Iterator
 
 import httpx
 
@@ -25,15 +26,16 @@ def fetch_project_file(project_name: str, filename: str) -> str:
     return file_content
 
 
-def fetch_project_files(project_names: list[str], filename: str) -> dict:
-    """Fetch file for all given projects via GitHub's GraphQL API."""
+def fetch_project_files(project_names: list[str], filename: str, batch_size: int = 100):
+    """Fetch file in batches for all given projects via GitHub's GraphQL API."""
     headers = {"Authorization": f"Bearer {os.getenv('GITHUB_TOKEN')}"}
-    payload = {"query": build_project_files_query(project_names, filename)}
-    response = httpx.post(
-        BASE_URL + GRAPHQL_ENDPOINT, headers=headers, json=payload, timeout=30
-    )
-    projects = response.json()["data"]["repository"]
-    return projects
+    project_files = {}
+    for pnames in batch_list(project_names, batch_size):
+        payload = {"query": build_project_files_query(pnames, filename)}
+        url = BASE_URL + GRAPHQL_ENDPOINT
+        response = httpx.post(url, headers=headers, json=payload, timeout=30)
+        project_files.update(response.json()["data"]["repository"])
+    return project_files
 
 
 def build_project_files_query(project_names: list[str], filename: str) -> str:
@@ -63,3 +65,9 @@ def build_project_files_query(project_names: list[str], filename: str) -> str:
 def sanitize_identifier(identifier: str) -> str:
     """Replace invalid characters in identifier with underscores."""
     return identifier.replace(".", "_").replace("-", "_")
+
+
+def batch_list(list_: list, batch_size: int) -> Iterator[list]:
+    """Break input list into batches."""
+    for i in range(0, len(list_), batch_size):
+        yield list_[i : i + batch_size]

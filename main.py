@@ -1,7 +1,6 @@
 """Interact with API"""
 
 from collections import defaultdict
-from typing import Iterator
 
 import yaml
 from dotenv import load_dotenv
@@ -42,11 +41,9 @@ def get_project(project_name: str) -> Project:
 
 def cache_all_projects() -> None:
     """Fetch and cache select data for all OSS-Fuzz projects (in batches)."""
-    project_yaml_files, build_sh_files = {}, {}
     print("Please wait: caching project data... (just once)")
-    for pnames in _batch_list(list_projects(), BATCH_SIZE):
-        project_yaml_files.update(fetch_project_files(pnames, "project.yaml"))
-        build_sh_files.update(fetch_project_files(pnames, "build.sh"))
+    project_yaml_files = fetch_project_files(list_projects(5), "project.yaml")
+    build_sh_files = fetch_project_files(list_projects(5), "build.sh")
     global _projects_cache
     _projects_cache = _merge_by_project(project_yaml_files, build_sh_files)
 
@@ -72,9 +69,3 @@ def _merge_by_project(projects1: dict, projects2: dict) -> dict:
         merged_projects[pname].update(projects1[pname] or {})
         merged_projects[pname].update(projects2[pname] or {})
     return dict(merged_projects)
-
-
-def _batch_list(list_: list, batch_size: int) -> Iterator[list]:
-    """Break input list into batches."""
-    for i in range(0, len(list_), batch_size):
-        yield list_[i : i + batch_size]
