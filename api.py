@@ -2,6 +2,7 @@
 
 from dotenv import load_dotenv
 
+from cache import Cache
 from fetcher import fetch_project_file, fetch_project_files, fetch_project_names
 from loader import load_project_from_files
 from models import Project, Projects
@@ -11,7 +12,7 @@ load_dotenv()
 
 BATCH_SIZE = 200
 
-_projects_cache = {}
+_cache = Cache()
 
 
 def list_projects(limit: int | None = None) -> list[str]:
@@ -40,5 +41,4 @@ def cache_projects(limit: int | None = None) -> None:
         build_sh = build_sh_files[sanitize(project_name)]
         project = load_project_from_files(project_name, project_yaml, build_sh)
         projects[project_name] = project
-    global _projects_cache
-    _projects_cache = projects
+    _cache.projects = projects
