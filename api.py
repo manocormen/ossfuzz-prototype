@@ -29,6 +29,13 @@ def get_project(project_name: str) -> Project:
     return project
 
 
+def get_projects(limit: int | None = None, clear_cache: bool = False) -> Projects:
+    """Return the details of all projects."""
+    if not _cache or clear_cache:
+        cache_projects(limit)
+    return _cache.projects
+
+
 def cache_projects(limit: int | None = None) -> None:
     """Cache the projects, up to limit."""
     print("Please wait: caching project data... (just once)")
