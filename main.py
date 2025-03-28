@@ -1,4 +1,4 @@
-"""Public module for interacting with OSS-Fuzz projects"""
+"""Interact with API"""
 
 from collections import defaultdict
 from typing import Iterator
@@ -7,15 +7,14 @@ import yaml
 from dotenv import load_dotenv
 
 from fetch import fetch_project_file, fetch_project_files, fetch_project_names
+from models import Project
 
 load_dotenv()
 
-type Project = dict[str, str | list[str]]
-type Projects = dict[str, Project]
 
 BATCH_SIZE = 100
 
-_projects_cache: Projects = {}
+_projects_cache = {}
 
 
 def list_projects(limit: int | None = None) -> list[str]:
@@ -24,21 +23,21 @@ def list_projects(limit: int | None = None) -> list[str]:
     return projects if limit is None else projects[:limit]
 
 
-def get_project_details(project_name: str) -> Project:
-    """Return the details of a specific OSS-Fuzz project."""
+def get_project(project_name: str) -> Project:
+    """Return a specific OSS-Fuzz project."""
     project_yaml = yaml.safe_load(fetch_project_file(project_name, "project.yaml"))
     build_sh = fetch_project_file(project_name, "build.sh")
-    project_details = {
-        "name": project_name,
-        "language": project_yaml.get("language"),
-        "homepage": project_yaml.get("homepage"),
-        "main_repo": project_yaml.get("main_repo"),
-        "primary_contact": project_yaml.get("primary_contact"),
-        "vendor_ccs": project_yaml.get("vendor_ccs", []),
-        "fuzzing_engines": project_yaml.get("fuzzing_engines", []),
-        "build_system": _infer_build_system(build_sh),
-    }
-    return project_details
+    project = Project(
+        name=project_name,
+        language=project_yaml.get("language"),
+        homepage=project_yaml.get("homepage"),
+        main_repo=project_yaml.get("main_repo"),
+        primary_contact=project_yaml.get("primary_contact"),
+        vendor_ccs=project_yaml.get("vendor_ccs"),
+        fuzzing_engines=project_yaml.get("fuzzing_engines"),
+        build_system=_infer_build_system(build_sh),
+    )
+    return project
 
 
 def cache_all_projects() -> None:
@@ -52,7 +51,7 @@ def cache_all_projects() -> None:
     _projects_cache = _merge_by_project(project_yaml_files, build_sh_files)
 
 
-def _infer_build_system(file: str) -> str | None:
+def _infer_build_system(file: str) -> str:
     """Heuristically infer the build system using in a file."""
     file = file.lower()
     if "cmake" in file:
@@ -63,12 +62,12 @@ def _infer_build_system(file: str) -> str | None:
         return "ninja"
     if "bazel" in file:
         return "bazel"
-    return None
+    return ""
 
 
-def _merge_by_project(projects1: Projects, projects2: Projects) -> Projects:
+def _merge_by_project(projects1: dict, projects2: dict) -> dict:
     """Merge two dictionaries of projects into one, keyed by project names."""
-    merged_projects: Projects = defaultdict(dict)
+    merged_projects: defaultdict = defaultdict(dict)
     for pname in projects1:
         merged_projects[pname].update(projects1[pname] or {})
         merged_projects[pname].update(projects2[pname] or {})

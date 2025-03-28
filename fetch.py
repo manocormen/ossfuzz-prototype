@@ -1,12 +1,9 @@
-"""Internal module for fetching OSS-Fuzz project data"""
+"""Fetch Data"""
 
 import base64
 import os
 
 import httpx
-
-type Project = dict[str, str | list[str]]
-type Projects = dict[str, Project]
 
 BASE_URL = "https://api.github.com"
 CONTENTS_ENDPOINT = "/repos/google/oss-fuzz/contents"
@@ -28,7 +25,7 @@ def fetch_project_file(project_name: str, filename: str) -> str:
     return file_content
 
 
-def fetch_project_files(project_names: list[str], filename: str) -> Projects:
+def fetch_project_files(project_names: list[str], filename: str) -> dict:
     """Fetch file for all given projects via GitHub's GraphQL API."""
     headers = {"Authorization": f"Bearer {os.getenv('GITHUB_TOKEN')}"}
     payload = {"query": build_project_files_query(project_names, filename)}
