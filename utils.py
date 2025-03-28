@@ -3,20 +3,6 @@
 from typing import Iterator
 
 
-def infer_build_system(file_content: str) -> str:
-    """Heuristically infer the build system used in a file."""
-    file = file_content.lower()
-    if "cmake" in file:
-        return "cmake"
-    if "make" in file:
-        return "make"
-    if "ninja" in file:
-        return "ninja"
-    if "bazel" in file:
-        return "bazel"
-    return "unknown"
-
-
 def sanitize(identifier: str) -> str:
     """Replace invalid characters in identifier with underscores."""
     return identifier.replace(".", "_").replace("-", "_")
