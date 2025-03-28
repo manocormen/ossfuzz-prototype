@@ -30,11 +30,14 @@ def fetch_project_files(project_names: list[str], filename: str, batch_size: int
     """Fetch file in batches for all given projects via GitHub's GraphQL API."""
     headers = {"Authorization": f"Bearer {os.getenv('GITHUB_TOKEN')}"}
     project_files = {}
-    for pnames in batch_list(project_names, batch_size):
-        payload = {"query": build_project_files_query(pnames, filename)}
+    for pname in batch_list(project_names, batch_size):
+        payload = {"query": build_project_files_query(pname, filename)}
         url = BASE_URL + GRAPHQL_ENDPOINT
         response = httpx.post(url, headers=headers, json=payload, timeout=30)
-        project_files.update(response.json()["data"]["repository"])
+        for project_name, files in response.json()["data"]["repository"].items():
+            project_files[project_name] = (
+                files[sanitize_identifier(filename)] if files else None
+            )
     return project_files
 
 

@@ -15,7 +15,7 @@ class Project:
     primary_contact: str = ""
     vendor_ccs: list[str] = field(default_factory=list)
     fuzzing_engines: list[str] = field(default_factory=list)
-    build_system: str = ""
+    build_system: str | None = None
 
     def to_dict(self) -> dict:
         """Return project as a dict."""

@@ -23,7 +23,7 @@ def list_projects(limit: int | None = None) -> list[str]:
 
 
 def get_project(project_name: str) -> Project:
-    """Return a specific OSS-Fuzz project."""
+    """Return the details of a specific project."""
     project_yaml = yaml.safe_load(fetch_project_file(project_name, "project.yaml"))
     build_sh = fetch_project_file(project_name, "build.sh")
     project = Project(
@@ -39,13 +39,27 @@ def get_project(project_name: str) -> Project:
     return project
 
 
-def cache_all_projects() -> None:
-    """Fetch and cache select data for all OSS-Fuzz projects (in batches)."""
+def cache_projects(limit: int | None = None) -> None:
+    """Cache the projects, up to limit."""
     print("Please wait: caching project data... (just once)")
-    project_yaml_files = fetch_project_files(list_projects(5), "project.yaml")
-    build_sh_files = fetch_project_files(list_projects(5), "build.sh")
+    project_yaml_files = fetch_project_files(list_projects(limit), "project.yaml")
+    build_sh_files = fetch_project_files(list_projects(limit), "build.sh")
+    projects = {}
+    for project_name in project_yaml_files:
+        project_yaml = yaml.safe_load(project_yaml_files[project_name])
+        build_sh = build_sh_files[project_name]
+        projects[project_name] = Project(
+            name=project_name,
+            language=project_yaml.get("language"),
+            homepage=project_yaml.get("homepage"),
+            main_repo=project_yaml.get("main_repo"),
+            primary_contact=project_yaml.get("primary_contact"),
+            vendor_ccs=project_yaml.get("vendor_ccs"),
+            fuzzing_engines=project_yaml.get("fuzzing_engines"),
+            build_system=_infer_build_system(build_sh) if build_sh else None,
+        )
     global _projects_cache
-    _projects_cache = _merge_by_project(project_yaml_files, build_sh_files)
+    _projects_cache = projects
 
 
 def _infer_build_system(file: str) -> str:
