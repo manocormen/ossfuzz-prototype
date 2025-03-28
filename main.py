@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 
 from fetch import fetch_project_file, fetch_project_files, fetch_project_names
 from models import Project
+from utils import sanitize
 
 load_dotenv()
 
@@ -42,12 +43,13 @@ def get_project(project_name: str) -> Project:
 def cache_projects(limit: int | None = None) -> None:
     """Cache the projects, up to limit."""
     print("Please wait: caching project data... (just once)")
-    project_yaml_files = fetch_project_files(list_projects(limit), "project.yaml")
-    build_sh_files = fetch_project_files(list_projects(limit), "build.sh")
+    project_names = list_projects(limit)
+    project_yaml_files = fetch_project_files(project_names, "project.yaml")
+    build_sh_files = fetch_project_files(project_names, "build.sh")
     projects = {}
-    for project_name in project_yaml_files:
-        project_yaml = yaml.safe_load(project_yaml_files[project_name])
-        build_sh = build_sh_files[project_name]
+    for project_name in project_names:
+        project_yaml = yaml.safe_load(project_yaml_files[sanitize(project_name)])
+        build_sh = build_sh_files[sanitize(project_name)]
         projects[project_name] = Project(
             name=project_name,
             language=project_yaml.get("language"),

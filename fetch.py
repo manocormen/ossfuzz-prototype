@@ -6,6 +6,8 @@ from typing import Iterator
 
 import httpx
 
+from utils import sanitize
+
 BASE_URL = "https://api.github.com"
 CONTENTS_ENDPOINT = "/repos/google/oss-fuzz/contents"
 GRAPHQL_ENDPOINT = "/graphql"
@@ -35,9 +37,7 @@ def fetch_project_files(project_names: list[str], filename: str, batch_size: int
         url = BASE_URL + GRAPHQL_ENDPOINT
         response = httpx.post(url, headers=headers, json=payload, timeout=30)
         for project_name, files in response.json()["data"]["repository"].items():
-            project_files[project_name] = (
-                files[sanitize_identifier(filename)] if files else None
-            )
+            project_files[project_name] = files[sanitize(filename)] if files else None
     return project_files
 
 
@@ -45,12 +45,12 @@ def build_project_files_query(project_names: list[str], filename: str) -> str:
     """Build query for fetching file for all given projects via GitHub's GraphQL API."""
     inner_fragments = []
     for pname in project_names:
-        sanitized_pname = sanitize_identifier(pname)
+        sanitized_pname = sanitize(pname)
         inner_fragments.append(
             f"""
             {sanitized_pname}: object(expression: "HEAD:projects/{pname}/{filename}") {{
                 ... on Blob {{
-                    {sanitize_identifier(filename)}: text
+                    {sanitize(filename)}: text
                 }}
             }}
             """
@@ -63,11 +63,6 @@ def build_project_files_query(project_names: list[str], filename: str) -> str:
         }}
     """
     return query
-
-
-def sanitize_identifier(identifier: str) -> str:
-    """Replace invalid characters in identifier with underscores."""
-    return identifier.replace(".", "_").replace("-", "_")
 
 
 def batch_list(list_: list, batch_size: int) -> Iterator[list]:
