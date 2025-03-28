@@ -38,22 +38,22 @@ def fetch_project_files(project_names: list[str], filename: str) -> dict:
 
 def build_project_files_query(project_names: list[str], filename: str) -> str:
     """Build query for fetching file for all given projects via GitHub's GraphQL API."""
-    inner_fragment = "\n".join(
-        [
+    inner_fragments = []
+    for pname in project_names:
+        sanitized_pname = sanitize_identifier(pname)
+        inner_fragments.append(
             f"""
-                {pname}: object(expression: "HEAD:projects/{pname}/{filename}") {{
-                    ... on Blob {{
-                        {sanitize_identifier(filename)}: text
-                    }}
+            {sanitized_pname}: object(expression: "HEAD:projects/{pname}/{filename}") {{
+                ... on Blob {{
+                    {sanitize_identifier(filename)}: text
                 }}
+            }}
             """
-            for pname in [sanitize_identifier(pname) for pname in project_names]
-        ]
-    )
+        )
     query = f"""
         {{
             repository(owner: "google", name: "oss-fuzz") {{
-                {inner_fragment}
+                {'\n'.join(inner_fragments)}
             }}
         }}
     """
