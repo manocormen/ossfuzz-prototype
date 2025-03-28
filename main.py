@@ -1,13 +1,11 @@
 """Interact with API"""
 
-from collections import defaultdict
-
 import yaml
 from dotenv import load_dotenv
 
 from fetch import fetch_project_file, fetch_project_files, fetch_project_names
 from models import Project
-from utils import sanitize
+from utils import infer_build_system, sanitize
 
 load_dotenv()
 
@@ -35,7 +33,7 @@ def get_project(project_name: str) -> Project:
         primary_contact=project_yaml.get("primary_contact"),
         vendor_ccs=project_yaml.get("vendor_ccs"),
         fuzzing_engines=project_yaml.get("fuzzing_engines"),
-        build_system=_infer_build_system(build_sh),
+        build_system=infer_build_system(build_sh),
     )
     return project
 
@@ -58,30 +56,7 @@ def cache_projects(limit: int | None = None) -> None:
             primary_contact=project_yaml.get("primary_contact"),
             vendor_ccs=project_yaml.get("vendor_ccs"),
             fuzzing_engines=project_yaml.get("fuzzing_engines"),
-            build_system=_infer_build_system(build_sh) if build_sh else None,
+            build_system=infer_build_system(build_sh) if build_sh else None,
         )
     global _projects_cache
     _projects_cache = projects
-
-
-def _infer_build_system(file: str) -> str:
-    """Heuristically infer the build system using in a file."""
-    file = file.lower()
-    if "cmake" in file:
-        return "cmake"
-    if "make" in file:
-        return "make"
-    if "ninja" in file:
-        return "ninja"
-    if "bazel" in file:
-        return "bazel"
-    return ""
-
-
-def _merge_by_project(projects1: dict, projects2: dict) -> dict:
-    """Merge two dictionaries of projects into one, keyed by project names."""
-    merged_projects: defaultdict = defaultdict(dict)
-    for pname in projects1:
-        merged_projects[pname].update(projects1[pname] or {})
-        merged_projects[pname].update(projects2[pname] or {})
-    return dict(merged_projects)

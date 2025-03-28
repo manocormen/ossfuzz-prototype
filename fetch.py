@@ -2,11 +2,10 @@
 
 import base64
 import os
-from typing import Iterator
 
 import httpx
 
-from utils import sanitize
+from utils import batch_list, sanitize
 
 BASE_URL = "https://api.github.com"
 CONTENTS_ENDPOINT = "/repos/google/oss-fuzz/contents"
@@ -63,9 +62,3 @@ def build_project_files_query(project_names: list[str], filename: str) -> str:
         }}
     """
     return query
-
-
-def batch_list(list_: list, batch_size: int) -> Iterator[list]:
-    """Break input list into batches."""
-    for i in range(0, len(list_), batch_size):
-        yield list_[i : i + batch_size]
