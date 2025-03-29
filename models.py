@@ -23,7 +23,7 @@ class Project:
 
     def to_json(self) -> str:
         """Return project as json."""
-        return json.dumps(asdict(self))
+        return json.dumps(asdict(self), indent=4)
 
 
 type Projects = dict[str, Project]
