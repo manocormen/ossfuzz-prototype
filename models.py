@@ -5,6 +5,16 @@ from dataclasses import asdict, dataclass, field
 
 
 @dataclass
+class ProjectFile:
+    """Project File Model."""
+
+    content: str = ""
+
+    def __repr__(self):
+        return f"'{self.content[:10]}...'"
+
+
+@dataclass
 class Project:
     """Project Model."""
 
@@ -16,8 +26,8 @@ class Project:
     vendor_ccs: list[str] = field(default_factory=list)
     fuzzing_engines: list[str] = field(default_factory=list)
     build_system: str | None = None
-    project_yaml: str | None = None
-    build_sh: str | None = None
+    project_yaml: ProjectFile | None = None
+    build_sh: ProjectFile | None = None
 
     def to_dict(self) -> dict:
         """Return project as a dict."""

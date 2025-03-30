@@ -4,7 +4,7 @@ import json
 
 import yaml
 
-from models import Project
+from models import Project, ProjectFile
 
 
 def load_project_from_files(
@@ -20,9 +20,9 @@ def load_project_from_files(
         primary_contact=project_yaml_dict.get("primary_contact"),
         vendor_ccs=project_yaml_dict.get("vendor_ccs"),
         fuzzing_engines=project_yaml_dict.get("fuzzing_engines"),
-        build_system=infer_build_system(build_sh) if build_sh else None,
-        project_yaml=project_yaml,
-        build_sh=build_sh,
+        build_system=infer_build_system(build_sh) if build_sh is not None else None,
+        project_yaml=ProjectFile(project_yaml) if project_yaml is not None else None,
+        build_sh=ProjectFile(build_sh) if build_sh is not None else None,
     )
     return project
 

@@ -72,12 +72,12 @@ def match_projects(
 
 def cache_projects(limit: int | None = None) -> None:
     """Cache the projects, up to limit."""
-    print("Please wait: Fetching project data... (~45s, only once)")
+    print("⏳ Please wait: Fetching project data... (~45s, only once)")
     project_names = list_projects(limit)
     build_sh_files = fetch_project_files(project_names, "build.sh", BATCH_SIZE)
-    print("We're halfway there...")
+    print("🛠️ We're halfway there...")
     project_yaml_files = fetch_project_files(project_names, "project.yaml", BATCH_SIZE)
-    print("Caching complete!")
+    print("✅ Caching complete!")
     projects: Projects = {}
     for project_name in project_names:
         project_yaml = project_yaml_files[sanitize(project_name)]
