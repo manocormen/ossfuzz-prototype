@@ -63,7 +63,7 @@ def match_projects(
         """Return true if the given project matches all the keywords in the closure."""
         for attr_name, keyword in keywords.items():
             attr_value = getattr(project, attr_name)
-            if attr_value and keyword not in attr_value:
+            if not attr_value or keyword not in attr_value:
                 return False  # If a single keyword is missing, no match, return early
         return True
 
