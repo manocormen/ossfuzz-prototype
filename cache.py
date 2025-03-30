@@ -14,3 +14,7 @@ class Cache:
 
     def __bool__(self) -> bool:
         return len(self) > 0
+
+    def clear(self) -> None:
+        """Remove all items from the cache."""
+        self.projects.clear()

@@ -86,3 +86,8 @@ def cache_projects(limit: int | None = None) -> None:
         projects[project_name] = project
     _cache.projects = projects
     print("Done")
+
+
+def clear_cache() -> None:
+    """Remove all items from the cache."""
+    _cache.clear()
