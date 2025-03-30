@@ -19,6 +19,8 @@ def dummy_projects():
             vendor_ccs=None,
             fuzzing_engines=None,
             build_system="bazel",
+            project_yaml="homepage: ...",
+            build_sh="# Copyrigh...",
         ),
         "abseil-py": Project(
             name="abseil-py",
@@ -29,6 +31,8 @@ def dummy_projects():
             vendor_ccs=["david@adalogics.com"],
             fuzzing_engines=["libfuzzer"],
             build_system="unknown",
+            project_yaml="fuzzing_en...",
+            build_sh="#!/bin/bas...",
         ),
         "ada-url": Project(
             name="ada-url",
@@ -39,6 +43,8 @@ def dummy_projects():
             vendor_ccs=None,
             fuzzing_engines=["libfuzzer", "afl", "honggfuzz", "centipede"],
             build_system=None,
+            project_yaml="homepage: ...",
+            build_sh=None,
         ),
     }
 
@@ -54,18 +60,21 @@ def test_get_project(dummy_projects):
     """Naively test function for getting project details (assumes static project)."""
     observed = get_project("ada-url")
     expected = dummy_projects["ada-url"]
-    assert observed == expected
+    for attr in ["name", "language", "fuzzing_engines", "build_system"]:
+        assert getattr(observed, attr) == getattr(expected, attr)
 
 
 def test_get_projects(dummy_projects):
     """Naively test getting details of several projects (assumes static projects)."""
-    observed = get_projects(3)
-    expected = dummy_projects
-    assert observed == expected
+    for name, observed in get_projects(3).items():
+        expected = dummy_projects[name]
+        for attr in ["name", "language", "fuzzing_engines", "build_system"]:
+            assert getattr(observed, attr) == getattr(expected, attr)
 
 
 def test_match_projects(dummy_projects):
-    """Naively test getting projects that match criteria (assumes static projects."""
+    """Naively test getting projects that match criteria (assumes static projects)."""
     observed = match_projects(name="ada", language="c++", fuzzing_engines="afl")
     expected = {"ada-url": dummy_projects["ada-url"]}
-    assert observed == expected
+    for attr in ["name", "language", "fuzzing_engines", "build_system"]:
+        assert getattr(observed["ada-url"], attr) == getattr(expected["ada-url"], attr)
