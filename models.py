@@ -38,4 +38,4 @@ class Project:
         return json.dumps(asdict(self), indent=4)
 
 
-type Projects = dict[str, Project]
+Projects = dict[str, Project]

@@ -1,1 +1,1 @@
-# OSS-Fuzz-Research
+# OSS-Fuzz-Research (Prototype)

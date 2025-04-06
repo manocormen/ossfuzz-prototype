@@ -71,10 +71,11 @@ def build_project_files_query(project_names: list[str], filename: str) -> str:
             }}
             """
         )
+    inner = "\n".join(inner_fragments)
     query = f"""
         {{
             repository(owner: "google", name: "oss-fuzz") {{
-                {'\n'.join(inner_fragments)}
+                {inner}
             }}
         }}
     """
