@@ -16,10 +16,12 @@ GRAPHQL_ENDPOINT = "/graphql"
 def fetch_project_names() -> list[str]:
     """Fetch the names of all projects via GitHub's REST API."""
     try:
+        if os.getenv("GITHUB_TOKEN") is None:
+            raise Exception  # For ease, treat absent key as API error -> fallback
         response = httpx.get(BASE_URL + CONTENTS_ENDPOINT + "/projects")
         response.raise_for_status()
         projects = [project["name"] for project in response.json()]
-    except httpx.HTTPError:  # Rough fallback, to allow demo to proceed if API fails
+    except:  # Rough fallback, just to allow demo to proceed if API fails
         projects = list(load_projects_from_local_file("fallback.json").keys())
     return projects
 
@@ -30,7 +32,7 @@ def fetch_project_file(project_name: str, filename: str) -> str | None:
         url = BASE_URL + CONTENTS_ENDPOINT + f"/projects/{project_name}/{filename}"
         response = httpx.get(url).raise_for_status()
         file_content = base64.b64decode(response.json().get("content", "")).decode()
-    except httpx.HTTPError:  # Rough fallback, to allow demo to proceed if API fails
+    except:  # Rough fallback, just to allow demo to proceed if API fails
         project = load_projects_from_local_file("fallback.json")[project_name]
         file_content = getattr(project, sanitize(filename))
     return file_content
@@ -48,7 +50,7 @@ def fetch_project_files(project_names: list[str], filename: str, batch_size: int
             response.raise_for_status()
             for proj_name, files in response.json()["data"]["repository"].items():
                 project_files[proj_name] = files[sanitize(filename)] if files else None
-    except httpx.HTTPError:  # Rough fallback, to allow demo to proceed if API fails
+    except:  # Rough fallback, just to allow demo to proceed if API fails
         project_files = {}
         projects = load_projects_from_local_file("fallback.json")
         for project_name in project_names:
